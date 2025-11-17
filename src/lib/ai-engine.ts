@@ -1,39 +1,38 @@
-import { openai } from "./openai";
+import OpenAI from "openai";
+import { createBlueprintPrompt } from "./types";
+import { parseAIResponseToFiles } from "./types";
 
-export async function generateSaaS(input: any) {
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// Main function your API route expects
+export async function runBlueprint(input: any) {
   try {
-    const completion = await openai.chat.completions.create({
+    const prompt = createBlueprintPrompt(input);
+
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: "You generate SaaS source code files and folder structures."
-        },
-        {
-          role: "user",
-          content: JSON.stringify(input, null, 2)
-        }
-      ]
+        { role: "system", content: "You are NextForge Pro+ AI Engine." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.4,
     });
 
-    const responseText = completion.choices[0].message.content || "";
+    const raw = completion.choices?.[0]?.message?.content ?? "";
 
-    let parsed = {};
-    try {
-      parsed = JSON.parse(responseText);
-    } catch {
-      parsed = { raw: responseText };
-    }
+    const files = parseAIResponseToFiles(raw);
 
     return {
       success: true,
-      ...parsed
+      files,
+      message: "Blueprint generated successfully",
     };
-
-  } catch (err: any) {
+  } catch (error: any) {
     return {
       success: false,
-      message: err.message
+      message: error.message || "AI Engine Error",
     };
   }
 }
