@@ -1,17 +1,31 @@
-// src/lib/types.ts
+export function createBlueprintPrompt(input: any): string {
+  return `
+  You are NextForge Pro+.
+  Turn this user request into a complete codebase:
 
-export interface GeneratorRequest {
-  idea: string;
-  description: string;
-  features: string[];
-  framework: "nextjs" | "react" | "html" | "node";
-  output: "source" | "instructions" | "both";
+  ${JSON.stringify(input, null, 2)}
+
+  Output strictly in this JSON format:
+  {
+    "files": {
+      "path/to/file": "content here"
+    }
+  }
+  `;
 }
 
-export interface GeneratorResponse {
-  success: boolean;
-  message?: string;
-  files?: Record<string, string>;
-  readme?: string;
-  instructions?: string;
+// Turn AI response text → { files: {} }
+export function parseAIResponseToFiles(raw: string) {
+  try {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}") + 1;
+
+    const extracted = raw.substring(start, end);
+
+    const json = JSON.parse(extracted);
+
+    return json.files || {};
+  } catch {
+    return {};
+  }
 }
