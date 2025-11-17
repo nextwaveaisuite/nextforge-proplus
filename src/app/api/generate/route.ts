@@ -1,27 +1,19 @@
+// src/app/api/generate/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
+import { generateSaaS } from "@/lib/ai-engine";
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
+    const body = await req.json();
 
-    if (!data || !data.blueprint) {
-      return NextResponse.json(
-        { error: "Missing blueprint" },
-        { status: 400 }
-      );
-    }
+    const response = await generateSaaS(body);
 
-    // Placeholder scaffold response until Step 5.4
-    return NextResponse.json({
-      status: "ok",
-      message: "Scaffolding engine ready.",
-      blueprint_received: true
-    });
+    return NextResponse.json(response);
 
-  } catch (err) {
-    console.error("GENERATE ERROR:", err);
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Generation failed" },
+      { success: false, message: err.message || "Internal server error" },
       { status: 500 }
     );
   }
