@@ -1,9 +1,7 @@
-import GeneratorUI from "./components/GeneratorUI";
-
-export default function Page() {
+export default function Home() {
   return (
-    <div className="p-10">
-      <GeneratorUI />
+    <div className="p-10 text-3xl font-bold">
+      NextForge Pro+ UI Shell Working
     </div>
   );
 }
