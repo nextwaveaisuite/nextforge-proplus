@@ -32,6 +32,15 @@ export default function GeneratorPage() {
     setResult(data);
   }
 
+  function downloadZip() {
+    if (!result?.zip) return;
+
+    const link = document.createElement("a");
+    link.href = `data:application/zip;base64,${result.zip}`;
+    link.download = `${idea.replace(/\s+/g, "-").toLowerCase()}-nextforge.zip`;
+    link.click();
+  }
+
   return (
     <div className="p-10 text-white max-w-4xl mx-auto space-y-6">
 
@@ -74,7 +83,7 @@ export default function GeneratorPage() {
         onChange={(e) => setOutput(e.target.value)}
         className="w-full p-3 bg-black/40 rounded-lg border border-white/10"
       >
-        <option value="source">Source Files Only</option>
+        <option value="source">Source Code Only</option>
         <option value="instructions">Instructions Only</option>
         <option value="both">Both</option>
       </select>
@@ -88,10 +97,24 @@ export default function GeneratorPage() {
       </button>
 
       {result && (
-        <div className="p-6 bg-black/40 border border-white/10 rounded-xl">
-          <pre className="whitespace-pre-wrap text-sm">
+        <div className="p-6 bg-black/40 border border-white/10 rounded-xl space-y-4">
+
+          <div className="text-lg font-semibold">
+            {result.success ? "Generation Complete" : "Generation Failed"}
+          </div>
+
+          <pre className="whitespace-pre-wrap text-sm max-h-[350px] overflow-auto">
             {JSON.stringify(result, null, 2)}
           </pre>
+
+          {result.zip && (
+            <button
+              onClick={downloadZip}
+              className="w-full p-4 bg-green-400 text-black rounded-xl font-bold hover:bg-green-500"
+            >
+              📦 Download ZIP Package
+            </button>
+          )}
         </div>
       )}
     </div>
