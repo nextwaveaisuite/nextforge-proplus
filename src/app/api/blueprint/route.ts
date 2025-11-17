@@ -1,72 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
+import { openai } from "@/src/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
+    const classifier = await req.json();
 
-    if (!data || !data.app_type) {
+    if (!classifier || !classifier.app_type) {
       return NextResponse.json(
-        { error: "Invalid classifier data" },
+        { error: "Invalid classifier input" },
         { status: 400 }
       );
     }
 
-    // --- BUILD BLUEPRINT FROM CLASSIFIER ---
-    const { 
-      app_type, 
-      features, 
-      ui_components, 
-      routes, 
-      backend, 
-      description 
-    } = data;
+    const prompt = `
+You are the Blueprint Engine for NextForge Pro+.
+Using the following classifier output, generate a COMPLETE, detailed build blueprint.
 
-    // A universal blueprint generator (expandable in Step 5.3)
-    const blueprint = {
-      summary: `Blueprint for ${app_type}: ${description}`,
+CLASSIFIER INPUT:
+${JSON.stringify(classifier, null, 2)}
 
-      frontend: {
-        pages: routes.map((r) => ({
-          path: r,
-          file: `src/app${r === "/" ? "/page.tsx" : `${r}/page.tsx`}`,
-        })),
+Return ONLY JSON with this structure:
 
-        components: ui_components.map((c) => ({
-          name: c,
-          file: `src/components/${c}.tsx`,
-        })),
+{
+  "summary": "",
+  "frontend": {
+    "pages": [],
+    "components": [],
+    "styles": []
+  },
+  "backend": {
+    "api_routes": [],
+    "auth": false,
+    "stripe": false
+  },
+  "files_to_create": [],
+  "notes": {
+    "requires_ai_key": false,
+    "next_step": ""
+  }
+}
+`;
 
-        styles: ["globals.css", "tailwind.css"],
-      },
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+    });
 
-      backend: {
-        api_routes: [
-          backend.requires_ai ? "/api/generate" : null,
-          backend.requires_crud ? "/api/data" : null,
-        ].filter(Boolean),
+    const json = JSON.parse(completion.choices[0].message.content);
 
-        auth: backend.requires_auth,
-        stripe: backend.requires_stripe,
-      },
-
-      files_to_create: [
-        ...routes.map((r) => `src/app${r === "/" ? "/page.tsx" : `${r}/page.tsx`}`),
-        ...ui_components.map((c) => `src/components/${c}.tsx`),
-        "src/app/api/generate/route.ts"
-      ],
-
-      notes: {
-        requires_ai_key: backend.requires_ai,
-        next_step: "Use this blueprint to generate scaffolding.",
-      }
-    };
-
-    return NextResponse.json(blueprint);
+    return NextResponse.json(json);
 
   } catch (err) {
-    console.error("BLUEPRINT ENGINE ERROR:", err);
+    console.error("BLUEPRINT AI ERROR:", err);
     return NextResponse.json(
-      { error: "Blueprint generation error" },
+      { error: "Blueprint generation failed" },
       { status: 500 }
     );
   }
