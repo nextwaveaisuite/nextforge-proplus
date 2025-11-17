@@ -1,39 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runBlueprint } from "@/lib/ai-engine";
 import { createZipFromFiles } from "@/lib/zip-builder";
-
-// Define what a correct AI response looks like
-interface FileMap {
-  [path: string]: string | Uint8Array | ArrayBuffer;
-}
-
-interface AIResultSuccess {
-  success: true;
-  files: FileMap;
-  message?: string;
-}
-
-interface AIResultFail {
-  success: false;
-  message: string;
-}
-
-type AIResult = AIResultSuccess | AIResultFail;
-
-function isSuccess(result: AIResult): result is AIResultSuccess {
-  return result.success === true && typeof result.files === "object";
-}
+import { AIResult } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const result: AIResult = await runBlueprint(body);
+    const result = (await runBlueprint(body)) as AIResult;
 
     let zipBase64: string | null = null;
 
-    // Type-safe access
-    if (isSuccess(result)) {
+    if (result.success === true && result.files && typeof result.files === "object") {
       zipBase64 = await createZipFromFiles(result.files);
     }
 
@@ -42,9 +20,10 @@ export async function POST(req: NextRequest) {
       message: result.message,
       zip: zipBase64,
     });
-  } catch (err: any) {
+
+  } catch (e: any) {
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, message: e?.message || "API error" },
       { status: 500 }
     );
   }
