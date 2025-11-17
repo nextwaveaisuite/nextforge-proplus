@@ -1,31 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSaaS } from "@/lib/ai-engine";
+import { runBlueprint } from "@/lib/ai-engine";
 import { createZipFromFiles } from "@/lib/zip-builder";
+
+// Define what a correct AI response looks like
+interface FileMap {
+  [path: string]: string | Uint8Array | ArrayBuffer;
+}
+
+interface AIResultSuccess {
+  success: true;
+  files: FileMap;
+  message?: string;
+}
+
+interface AIResultFail {
+  success: false;
+  message: string;
+}
+
+type AIResult = AIResultSuccess | AIResultFail;
+
+function isSuccess(result: AIResult): result is AIResultSuccess {
+  return result.success === true && typeof result.files === "object";
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const result = await generateSaaS(body);
+    const result: AIResult = await runBlueprint(body);
 
-    if (!result.success) {
-      return NextResponse.json(result);
-    }
+    let zipBase64: string | null = null;
 
-    let zipBase64 = null;
-
-    if (result.files && typeof result.files === "object") {
+    // Type-safe access
+    if (isSuccess(result)) {
       zipBase64 = await createZipFromFiles(result.files);
     }
 
     return NextResponse.json({
-      ...result,
-      zip: zipBase64
+      success: result.success,
+      message: result.message,
+      zip: zipBase64,
     });
-
-  } catch (error: any) {
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }
