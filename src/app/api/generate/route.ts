@@ -1,5 +1,3 @@
-// src/app/api/generate/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { generateSaaS } from "@/lib/ai-engine";
 import { createZipFromFiles } from "@/lib/zip-builder";
