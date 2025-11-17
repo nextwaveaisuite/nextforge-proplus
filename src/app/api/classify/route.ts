@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai } from "@/src/lib/openai";
+import { openai } from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,51 +7,36 @@ export async function POST(req: NextRequest) {
 
     if (!idea) {
       return NextResponse.json(
-        { error: "No idea provided" },
+        { error: "Missing idea" },
         { status: 400 }
       );
     }
 
-    const prompt = `
-You are the Classification Engine for NextForge Pro+.
-Your task: Read the user's app idea and return a strict JSON response only.
-
-Use this schema:
-
-{
-  "app_type": "",
-  "complexity": "",
-  "features": [],
-  "ui_components": [],
-  "routes": [],
-  "backend": {
-    "requires_auth": false,
-    "requires_crud": false,
-    "requires_ai": false,
-    "requires_stripe": false
-  },
-  "description": ""
-}
-
-Classify this idea:
-"${idea}"
-`;
-
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Classify this SaaS idea and extract app_type, description, features, ui_components."
+        },
+        {
+          role: "user",
+          content: idea
+        }
+      ]
     });
 
-    const text = completion.choices[0].message.content;
-    const json = JSON.parse(text);
+    const data = completion.choices[0].message.content;
 
-    return NextResponse.json(json);
+    return NextResponse.json({
+      success: true,
+      data
+    });
 
-  } catch (err) {
-    console.error("CLASSIFIER AI ERROR:", err);
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Classification failed" },
+      { success: false, message: err.message },
       { status: 500 }
     );
   }
