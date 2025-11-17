@@ -3,35 +3,31 @@ import JSZip from "jszip";
 
 export async function POST(req: NextRequest) {
   try {
-    const { files } = await req.json();
-
-    if (!files || typeof files !== "object") {
-      return NextResponse.json(
-        { error: "Invalid file payload" },
-        { status: 400 }
-      );
-    }
+    const body = await req.json();
 
     const zip = new JSZip();
 
-    // Add files to ZIP structure
-    for (const filePath in files) {
-      zip.file(filePath, files[filePath]);
-    }
+    // Add files
+    Object.entries(body.files || {}).forEach(([path, content]) => {
+      zip.file(path, content);
+    });
 
-    // Generate ZIP buffer
+    // Generate as Uint8Array
     const zipContent = await zip.generateAsync({ type: "uint8array" });
 
-    return new NextResponse(zipContent, {
+    // Convert Uint8Array → Buffer (Node compatible)
+    const buffer = Buffer.from(zipContent);
+
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": "attachment; filename=nextforge_app.zip",
-      },
+        "Content-Disposition": "attachment; filename=nextforge_app.zip"
+      }
     });
-  } catch (err) {
-    console.error("ZIP EXPORT ERROR:", err);
+
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Export failed" },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }
