@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { openai } from "@/src/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,12 +12,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- CLASSIFICATION PROMPT ---
     const prompt = `
 You are the Classification Engine for NextForge Pro+.
-Your job: analyze the user's app idea and return a clean JSON structure.
+Your task: Read the user's app idea and return a strict JSON response only.
 
-Respond ONLY with JSON, using this schema:
+Use this schema:
 
 {
   "app_type": "",
@@ -37,28 +37,21 @@ Classify this idea:
 "${idea}"
 `;
 
-    // --- TEMPORARY FAKE AI RESPONSE (until we hook OpenAI in Step 5.3) ---
-    const fakeResponse = {
-      app_type: "ai-text-generator",
-      complexity: "simple",
-      features: ["input box", "AI generation", "output panel"],
-      ui_components: ["Input", "Button", "Card"],
-      routes: ["/", "/dashboard"],
-      backend: {
-        requires_auth: false,
-        requires_crud: false,
-        requires_ai: true,
-        requires_stripe: false,
-      },
-      description: "A simple AI text generator app."
-    };
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+    });
 
-    return NextResponse.json(fakeResponse);
+    const text = completion.choices[0].message.content;
+    const json = JSON.parse(text);
+
+    return NextResponse.json(json);
 
   } catch (err) {
-    console.error("CLASSIFIER ERROR:", err);
+    console.error("CLASSIFIER AI ERROR:", err);
     return NextResponse.json(
-      { error: "Server error during classification" },
+      { error: "Classification failed" },
       { status: 500 }
     );
   }
