@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * File Structure Generator for NextForge AI Pro+
- * STEP 2.2 — Generates folders & empty files as JSON
- */
-
 export async function POST(req: NextRequest) {
   try {
     const { app_type } = await req.json();
@@ -16,7 +11,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Define base scaffold
     const baseStructure = {
       "app/page.tsx": "",
       "app/api/generate/route.ts": "",
@@ -25,8 +19,7 @@ export async function POST(req: NextRequest) {
       "styles/app.css": ""
     };
 
-    // App-type-specific files
-    const typeMap: any = {
+    const typeMap = {
       "text-generator": {
         "app/generator/page.tsx": "",
         "app/api/generate/route.ts": ""
@@ -44,7 +37,6 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    // Final structure
     const structure =
       typeMap[app_type] 
         ? { ...baseStructure, ...typeMap[app_type] }
@@ -56,7 +48,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (err) {
-    console.error(err);
     return NextResponse.json(
       { error: "Server error during scaffold generation" },
       { status: 500 }

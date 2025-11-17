@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({
       app_type: "text-generator",
-      features: ["text generation"],
-      ui_components: ["InputBox","GenerateButton"],
+      features: ["text generation", "UI form", "output panel"],
+      ui_components: ["InputBox","GenerateButton","OutputCard"],
       requires_auth: false,
       requires_stripe: false,
       requires_crud: false,
