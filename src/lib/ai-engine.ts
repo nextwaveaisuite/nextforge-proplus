@@ -1,38 +1,58 @@
+// src/lib/ai-engine.ts
+
 import OpenAI from "openai";
-import { createBlueprintPrompt } from "./types";
-import { parseAIResponseToFiles } from "./types";
+import { AIResult } from "./types";
+import { extractJsonObject } from "./utils-json";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-// Main function your API route expects
-export async function runBlueprint(input: any) {
+export async function runBlueprint(body: any): Promise<AIResult> {
   try {
-    const prompt = createBlueprintPrompt(input);
+    if (!body || !body.prompt) {
+      return {
+        success: false,
+        message: "Missing prompt",
+      };
+    }
 
-    const completion = await client.chat.completions.create({
+    const completion = await client.responses.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are NextForge Pro+ AI Engine." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.4,
+      input: `
+       You are a SaaS builder engine.
+       Return ONLY valid JSON:
+       {
+         "message": "...",
+         "files": {
+           "path/to/file": "content"
+         }
+       }
+
+       USER INPUT:
+       ${body.prompt}
+      `,
     });
 
-    const raw = completion.choices?.[0]?.message?.content ?? "";
+    const text = completion.output_text;
 
-    const files = parseAIResponseToFiles(raw);
+    const parsed = extractJsonObject(text);
+
+    if (!parsed || !parsed.files) {
+      return {
+        success: false,
+        message: "Could not parse AI response",
+      };
+    }
 
     return {
       success: true,
-      files,
-      message: "Blueprint generated successfully",
+      message: parsed.message || "OK",
+      files: parsed.files,
     };
-  } catch (error: any) {
+
+  } catch (err: any) {
     return {
       success: false,
-      message: error.message || "AI Engine Error",
+      message: err?.message || "Unexpected error",
     };
   }
 }
