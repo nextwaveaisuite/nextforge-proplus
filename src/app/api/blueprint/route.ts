@@ -1,60 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai } from "@/src/lib/openai";
+import { openai } from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const classifier = await req.json();
+    const { idea } = await req.json();
 
-    if (!classifier || !classifier.app_type) {
+    if (!idea) {
       return NextResponse.json(
-        { error: "Invalid classifier input" },
+        { error: "Missing idea" },
         { status: 400 }
       );
     }
 
-    const prompt = `
-You are the Blueprint Engine for NextForge Pro+.
-Using the following classifier output, generate a COMPLETE, detailed build blueprint.
-
-CLASSIFIER INPUT:
-${JSON.stringify(classifier, null, 2)}
-
-Return ONLY JSON with this structure:
-
-{
-  "summary": "",
-  "frontend": {
-    "pages": [],
-    "components": [],
-    "styles": []
-  },
-  "backend": {
-    "api_routes": [],
-    "auth": false,
-    "stripe": false
-  },
-  "files_to_create": [],
-  "notes": {
-    "requires_ai_key": false,
-    "next_step": ""
-  }
-}
-`;
-
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Generate a full SaaS blueprint with modules, APIs, data schema, and page layout."
+        },
+        {
+          role: "user",
+          content: idea
+        }
+      ]
     });
 
-    const json = JSON.parse(completion.choices[0].message.content);
+    return NextResponse.json({
+      success: true,
+      blueprint: completion.choices[0].message.content
+    });
 
-    return NextResponse.json(json);
-
-  } catch (err) {
-    console.error("BLUEPRINT AI ERROR:", err);
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Blueprint generation failed" },
+      { success: false, message: err.message },
       { status: 500 }
     );
   }
