@@ -1,40 +1,35 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { openai } from "@/lib/openai";
+import OpenAI from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const { idea } = await req.json();
+    const body = await req.json();
 
-    if (!idea) {
-      return NextResponse.json(
-        { error: "Missing idea" },
-        { status: 400 }
-      );
-    }
+    const client = OpenAI();
 
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content:
-            "Generate a full SaaS blueprint with modules, APIs, data schema, and page layout."
-        },
-        {
-          role: "user",
-          content: idea
-        }
-      ]
+        { role: "system", content: "Return a clean JSON blueprint for a SaaS tool." },
+        { role: "user", content: body.prompt }
+      ],
+      response_format: { type: "json_object" }
     });
+
+    const responseJson = JSON.parse(completion.choices[0].message.content || "{}");
 
     return NextResponse.json({
       success: true,
-      blueprint: completion.choices[0].message.content
+      blueprint: responseJson
     });
-
-  } catch (err: any) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      {
+        success: false,
+        message: error?.message || "Blueprint generation failed"
+      },
       { status: 500 }
     );
   }
