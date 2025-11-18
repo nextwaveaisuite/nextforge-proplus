@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
 
@@ -5,41 +7,26 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    if (!body.files || typeof body.files !== "object") {
-      return NextResponse.json(
-        { success: false, error: "No files provided" },
-        { status: 400 }
-      );
-    }
-
     const zip = new JSZip();
 
-    // Add each file safely
-    Object.entries(body.files).forEach(([path, content]) => {
-      if (!content) content = "";
+    // Safely add files
+    if (body.files && typeof body.files === "object") {
+      for (const [path, content] of Object.entries(body.files)) {
+        zip.file(path, String(content ?? ""));
+      }
+    }
 
-      zip.file(
-        path,
-        content as string | Uint8Array | ArrayBuffer
-      );
-    });
+    const zipContent = await zip.generateAsync({ type: "uint8array" });
 
-    // Generate ZIP (Uint8Array)
-    const zipBytes = await zip.generateAsync({ type: "uint8array" });
-
-    // Convert Uint8Array → Buffer (Node-compatible)
-    const buffer = Buffer.from(zipBytes);
-
-    return new NextResponse(buffer, {
+    return new NextResponse(zipContent, {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition":
-          "attachment; filename=nextforge_app.zip",
-      },
+        "Content-Disposition": "attachment; filename=nextforge_app.zip"
+      }
     });
-  } catch (err: any) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, message: error?.message || "Export failed" },
       { status: 500 }
     );
   }
