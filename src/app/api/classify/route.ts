@@ -1,34 +1,26 @@
-export const dynamic = "force-dynamic";
-
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "@/lib/openai";
+import client from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const client = OpenAI();
-
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Classify the user's input into a known SaaS category." },
-        { role: "user", content: body.prompt }
-      ],
-      response_format: { type: "json_object" }
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: `Classify this SaaS idea:\n${JSON.stringify(body, null, 2)}`,
     });
-
-    const responseJson = JSON.parse(completion.choices[0].message.content || "{}");
 
     return NextResponse.json({
       success: true,
-      category: responseJson.category || "uncategorized"
+      classification: response.output_text || "",
     });
-  } catch (error: any) {
+  } catch (err: any) {
+    console.error("Classify API Error:", err);
+
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Classification failed"
+        message: err.message || "Idea classification failed.",
       },
       { status: 500 }
     );
