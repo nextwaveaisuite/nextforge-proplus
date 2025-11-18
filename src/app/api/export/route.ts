@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
       zip.file(filename, content as string);
     }
 
-    // Generate Uint8Array
+    // Uint8Array output
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Convert Uint8Array → ArrayBuffer (NextResponse requirement)
-    const arrayBuffer = uint8.buffer;
+    // Convert Uint8Array → NEW ArrayBuffer (safe)
+    const safeArrayBuffer = uint8.slice().buffer;
 
-    return new NextResponse(arrayBuffer, {
+    return new NextResponse(safeArrayBuffer, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="nextforge_app.zip"`,
