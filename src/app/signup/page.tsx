@@ -1,74 +1,28 @@
 "use client";
-
 import { useState } from "react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
 
-  async function handleSignup(e: any) {
-    e.preventDefault();
-    setError("");
-
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-
+  async function submit() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
-
-    if (!data.success) {
-      setError(data.error);
-    } else {
-      window.location.href = "/login";
-    }
+    if (res.ok) window.location.href = "/dashboard";
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "60px auto", textAlign: "center" }}>
-      <h2>Create Your Account</h2>
-
-      <form onSubmit={handleSignup}>
-        <input
-          type="email"
-          placeholder="Email"
-          required
-          style={{ width: "100%", padding: 10, marginTop: 20 }}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          required
-          style={{ width: "100%", padding: 10, marginTop: 20 }}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          required
-          style={{ width: "100%", padding: 10, marginTop: 20 }}
-          onChange={(e) => setConfirm(e.target.value)}
-        />
-
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        <button
-          style={{ width: "100%", padding: 12, marginTop: 25 }}
-          type="submit"
-        >
-          Sign Up
-        </button>
-      </form>
+    <div style={{ padding: 40 }}>
+      <h1>Create Account</h1>
+      <input placeholder="Email" value={email}
+        onChange={(e) => setEmail(e.target.value)} />
+      <input placeholder="Password" type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)} />
+      <button onClick={submit}>Sign Up</button>
     </div>
   );
 }
