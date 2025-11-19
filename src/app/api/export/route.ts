@@ -19,7 +19,10 @@ export async function POST(request: Request) {
 
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    return new Response(uint8, {
+    // ✅ Convert Uint8Array → ArrayBuffer (Response accepts this)
+    const buffer = uint8.buffer;
+
+    return new Response(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
