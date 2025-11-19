@@ -1,9 +1,7 @@
-// src/lib/types.ts
-
 export interface AIResultSuccess {
   success: true;
-  message: string;
   files: Record<string, string>;
+  message: string;
 }
 
 export interface AIResultError {
