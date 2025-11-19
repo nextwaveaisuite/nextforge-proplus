@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const zip = new JSZip();
 
-    // Safe file loop
+    // Add files to ZIP safely
     for (const [path, content] of Object.entries(body.files)) {
       const safe =
         typeof content === "string"
@@ -23,21 +23,18 @@ export async function POST(request: Request) {
       zip.file(path, safe);
     }
 
-    // Generate a Uint8Array ZIP
+    // Uint8Array ZIP output
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Convert Uint8Array → guaranteed ArrayBuffer (NOT SharedArrayBuffer)
-    const realBuffer = uint8.buffer.slice(
-      uint8.byteOffset,
-      uint8.byteOffset + uint8.byteLength
-    );
+    // 🔥 ABSOLUTELY SAFE ARRAYBUFFER REBUILD (pure ArrayBuffer)
+    const pureBuffer = new ArrayBuffer(uint8.length);
+    new Uint8Array(pureBuffer).set(uint8);
 
-    // Create blob using ONLY ArrayBuffer (safe BlobPart)
-    const zipBlob = new Blob([realBuffer], {
+    // Blob always accepts real ArrayBuffer
+    const zipBlob = new Blob([pureBuffer], {
       type: "application/zip",
     });
 
-    // Convert blob → stream
     const stream = zipBlob.stream();
 
     return new NextResponse(stream as any, {
