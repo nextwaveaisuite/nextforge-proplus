@@ -13,9 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `
-You generate SaaS scaffolding blueprints.
-Return ONLY pure JSON.
-Format:
+Return ONLY pure JSON in this exact format:
 {
   "files": {
      "path/to/file": "file content"
@@ -29,26 +27,29 @@ Description: ${body.description}
       input: prompt,
     });
 
-    let raw = completion.output[0].content[0].text;
+    const raw = completion.output_text;
     let parsed;
 
     try {
       parsed = JSON.parse(raw);
     } catch {
       return NextResponse.json(
-        { success: false, error: "Invalid JSON in AI response" },
+        { success: false, error: "Invalid JSON in AI output" },
         { status: 500 }
       );
     }
 
-    if (!parsed?.files || typeof parsed.files !== "object") {
+    if (!parsed.files || typeof parsed.files !== "object") {
       return NextResponse.json(
-        { success: false, error: "AI returned no files" },
+        { success: false, error: "Blueprint missing files" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, files: parsed.files });
+    return NextResponse.json({
+      success: true,
+      files: parsed.files,
+    });
   } catch (err) {
     return NextResponse.json(
       { success: false, error: "Server error", details: `${err}` },
