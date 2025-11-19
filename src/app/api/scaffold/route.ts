@@ -1,24 +1,27 @@
 import { NextResponse } from "next/server";
+import { generateBlueprint } from "@/lib/ai-engine";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { blueprint } = await request.json();
+    const { prompt } = await req.json();
 
-    if (!blueprint || !blueprint.files) {
+    if (!prompt) {
       return NextResponse.json(
-        { error: "Blueprint missing or invalid." },
+        { error: "Missing prompt." },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({
-      status: "ok",
-      files: blueprint.files,
-    });
+    const blueprint = await generateBlueprint(prompt);
+
+    return NextResponse.json(
+      { success: true, blueprint },
+      { status: 200 }
+    );
   } catch (err: any) {
     console.error("SCAFFOLD ERROR:", err);
     return NextResponse.json(
-      { error: err.message || "Scaffold failed" },
+      { error: err.message ?? "Failed generating scaffold." },
       { status: 500 }
     );
   }
