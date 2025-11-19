@@ -5,23 +5,15 @@ export async function generateBlueprint(userPrompt: string) {
     const completion = await client.responses.create({
       model: "gpt-4.1",
       input: [
-        {
-          role: "system",
-          content:
-            "You generate structured JSON blueprints for building SaaS apps.",
-        },
-        {
-          role: "user",
-          content: userPrompt,
-        },
+        { role: "system", content: "Generate structured JSON only." },
+        { role: "user", content: userPrompt },
       ],
     });
 
-    // The new OpenAI SDK returns output_text directly
     const raw = completion.output_text;
 
     if (!raw) {
-      throw new Error("OpenAI returned no output_text.");
+      throw new Error("No AI output received");
     }
 
     const parsed = JSON.parse(raw);
@@ -31,8 +23,8 @@ export async function generateBlueprint(userPrompt: string) {
       description: parsed.description,
       files: parsed.files,
     };
-  } catch (error: any) {
-    console.error("AI Engine Error:", error);
-    throw new Error(error.message || "AI generation failed.");
+  } catch (err: any) {
+    console.error("AI ENGINE ERROR:", err);
+    throw new Error(err.message || "Blueprint generation failed");
   }
 }
