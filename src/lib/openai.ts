@@ -4,6 +4,6 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing OPENAI_API_KEY in environment variables.");
 }
 
-export const client = new OpenAI({
+export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
