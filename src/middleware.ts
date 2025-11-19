@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
-
-const SECRET = process.env.JWT_SECRET || "nextforge_secret_key";
+import { verifyToken } from "@/lib/jwt";
 
 export function middleware(req: NextRequest) {
-  const token = req.cookies.get("session_token")?.value;
+  const protectedPaths = ["/dashboard"];
 
-  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+  if (protectedPaths.some((p) => req.nextUrl.pathname.startsWith(p))) {
+    const token = req.cookies.get("session")?.value;
+
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    try {
-      jwt.verify(token, SECRET);
-      return NextResponse.next();
-    } catch {
+    const valid = verifyToken(token);
+
+    if (!valid) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
@@ -24,5 +23,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/dashboard"],
 };
