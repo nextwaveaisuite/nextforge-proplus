@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     if (!body || !body.files) {
       return new Response(
         JSON.stringify({ error: "No files provided." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400 }
       );
     }
 
@@ -17,22 +17,20 @@ export async function POST(request: Request) {
       zip.file(path, typeof content === "string" ? content : "");
     }
 
+    // Generate a Uint8Array (this is safe for Response)
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // ✅ Convert Uint8Array → ArrayBuffer (Response accepts this)
-    const buffer = uint8.buffer;
-
-    return new Response(buffer, {
+    return new Response(uint8, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": "attachment; filename=app.zip"
-      }
+        "Content-Disposition": 'attachment; filename="project.zip"',
+      },
     });
-  } catch (err: any) {
+  } catch (error: any) {
     return new Response(
-      JSON.stringify({ error: err?.message || "Export failed" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: error.message }),
+      { status: 500 }
     );
   }
 }
