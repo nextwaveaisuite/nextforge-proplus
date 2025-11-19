@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
-export async function POST() {
-  const response = NextResponse.json({ success: true });
-  response.cookies.set("session_token", "", {
+export function POST() {
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("session", "", {
     httpOnly: true,
+    secure: true,
     path: "/",
     maxAge: 0,
   });
-  return response;
+  return res;
 }
