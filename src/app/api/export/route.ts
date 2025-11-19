@@ -17,22 +17,26 @@ export async function POST(request: Request) {
       zip.file(path, typeof content === "string" ? content : "");
     }
 
-    // Uint8Array
+    // Get Uint8Array
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Convert to Blob — TypeScript-safe AND browser-safe
-    const blob = new Blob([uint8], {
-      type: "application/zip"
+    // Create SAFE ArrayBuffer (copy into new buffer)
+    const safeBuffer = new ArrayBuffer(uint8.length);
+    const safeView = new Uint8Array(safeBuffer);
+    safeView.set(uint8);
+
+    // Create Blob from safe ArrayBuffer
+    const blob = new Blob([safeBuffer], {
+      type: "application/zip",
     });
 
     return new Response(blob, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="project.zip"'
-      }
+        "Content-Disposition": 'attachment; filename="project.zip"',
+      },
     });
-
   } catch (error: any) {
     return new Response(
       JSON.stringify({ error: error.message }),
