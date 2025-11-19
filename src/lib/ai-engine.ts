@@ -2,43 +2,33 @@ import { openai } from "./openai";
 
 export async function generateBlueprint(userPrompt: string) {
   try {
-    const completion = await openai.responses.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4.1",
-      input: [
+      messages: [
+        {
+          role: "system",
+          content: "You generate JSON blueprints for software scaffolding."
+        },
         {
           role: "user",
-          content: `Generate a JSON blueprint for a SaaS app based on this user request:\n\n${userPrompt}\n\nYour output MUST be strictly JSON.`
+          content: userPrompt
         }
       ]
     });
 
-    const first = completion.output?.[0];
+    const raw = completion.choices[0].message?.content ?? "{}";
+    const parsed = JSON.parse(raw);
 
-    if (!first) throw new Error("Empty OpenAI response.");
+    return {
+      success: true,
+      blueprint: parsed
+    };
 
-    let textContent = "";
-
-    // Safely extract:
-    // - direct text
-    // - content array
-    // - tool call
-    if ("content" in first) {
-      const c = (first as any).content?.[0]?.text;
-      if (c) textContent = c;
-    }
-    if (!textContent && "text" in first) {
-      textContent = (first as any).text ?? "";
-    }
-
-    if (!textContent) {
-      throw new Error("No text content found in OpenAI output.");
-    }
-
-    const parsed = JSON.parse(textContent);
-
-    return parsed;
-  } catch (err: any) {
+  } catch (err) {
     console.error("AI ENGINE ERROR:", err);
-    throw new Error(err.message ?? "AI engine failed.");
+    return {
+      success: false,
+      error: "Failed to generate blueprint."
+    };
   }
 }
