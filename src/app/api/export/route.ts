@@ -7,33 +7,28 @@ export async function POST(req: NextRequest) {
 
     if (!body.files || typeof body.files !== "object") {
       return NextResponse.json(
-        { success: false, message: "Missing files object." },
+        { success: false, error: "No files provided" },
         { status: 400 }
       );
     }
 
     const zip = new JSZip();
 
-    for (const [filename, content] of Object.entries(body.files)) {
-      zip.file(filename, content as string);
+    for (const [path, content] of Object.entries(body.files)) {
+      zip.file(path, content || "");
     }
 
-    // Uint8Array output
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Convert Uint8Array → NEW ArrayBuffer (safe)
-    const safeArrayBuffer = uint8.slice().buffer;
-
-    return new NextResponse(safeArrayBuffer, {
+    return new NextResponse(uint8, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="nextforge_app.zip"`,
       },
     });
-  } catch (err: any) {
-    console.error("Export API Error:", err);
+  } catch (err) {
     return NextResponse.json(
-      { success: false, message: err.message || "Unable to export ZIP" },
+      { success: false, error: "ZIP generation failed", details: `${err}` },
       { status: 500 }
     );
   }
