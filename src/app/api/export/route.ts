@@ -14,13 +14,15 @@ export async function POST(request: Request) {
 
     const zip = new JSZip();
 
+    // FIXED: force all content types to string
     for (const [path, content] of Object.entries(body.files)) {
-      zip.file(path, content ?? "");
+      const safe = typeof content === "string" ? content : JSON.stringify(content ?? "");
+      zip.file(path, safe);
     }
 
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // convert Uint8Array → ArrayBuffer → Node.js response
+    // SAFE ArrayBuffer slice
     const arrayBuffer = uint8.buffer.slice(
       uint8.byteOffset,
       uint8.byteOffset + uint8.byteLength
