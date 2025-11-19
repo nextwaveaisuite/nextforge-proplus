@@ -1,25 +1,38 @@
-import { openai } from "./openai";
-import { AIResult } from "./types";
+import { client } from "./openai";
 
-export async function runBlueprint(prompt: string): Promise<AIResult> {
+export async function generateBlueprint(userPrompt: string) {
   try {
-    const completion = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: prompt,
+    const completion = await client.responses.create({
+      model: "gpt-4.1",
+      input: [
+        {
+          role: "system",
+          content:
+            "You generate structured JSON blueprints for building SaaS apps.",
+        },
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ],
     });
 
-    const raw = completion.output[0].content[0].text;
+    // The new OpenAI SDK returns output_text directly
+    const raw = completion.output_text;
+
+    if (!raw) {
+      throw new Error("OpenAI returned no output_text.");
+    }
+
     const parsed = JSON.parse(raw);
 
     return {
-      success: true,
-      files: parsed.files || {},
-      message: "OK",
+      name: parsed.name,
+      description: parsed.description,
+      files: parsed.files,
     };
-  } catch (err) {
-    return {
-      success: false,
-      message: `AI engine error: ${err}`,
-    };
+  } catch (error: any) {
+    console.error("AI Engine Error:", error);
+    throw new Error(error.message || "AI generation failed.");
   }
 }
