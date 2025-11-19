@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import JSZip from "jszip";
 
 export async function POST(request: Request) {
@@ -5,8 +6,8 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     if (!body || !body.files) {
-      return new Response(
-        JSON.stringify({ error: "No files provided." }),
+      return NextResponse.json(
+        { error: "No files provided." },
         { status: 400 }
       );
     }
@@ -14,32 +15,28 @@ export async function POST(request: Request) {
     const zip = new JSZip();
 
     for (const [path, content] of Object.entries(body.files)) {
-      zip.file(path, typeof content === "string" ? content : "");
+      zip.file(path, content ?? "");
     }
 
-    // Get Uint8Array
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Create SAFE ArrayBuffer (copy into new buffer)
-    const safeBuffer = new ArrayBuffer(uint8.length);
-    const safeView = new Uint8Array(safeBuffer);
-    safeView.set(uint8);
+    // convert Uint8Array → ArrayBuffer → Node.js response
+    const arrayBuffer = uint8.buffer.slice(
+      uint8.byteOffset,
+      uint8.byteOffset + uint8.byteLength
+    );
 
-    // Create Blob from safe ArrayBuffer
-    const blob = new Blob([safeBuffer], {
-      type: "application/zip",
-    });
-
-    return new Response(blob, {
+    return new NextResponse(arrayBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="project.zip"',
+        "Content-Disposition": `attachment; filename="nextforge_app.zip"`,
       },
     });
-  } catch (error: any) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
+  } catch (err: any) {
+    console.error("EXPORT ERROR:", err);
+    return NextResponse.json(
+      { error: err.message || "Export failed" },
       { status: 500 }
     );
   }
