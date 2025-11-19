@@ -3,13 +3,10 @@ import JSZip from "jszip";
 export async function createZipFromFiles(files: Record<string, string>) {
   const zip = new JSZip();
 
-  Object.entries(files).forEach(([path, content]) => {
-    zip.file(path, content);
-  });
+  for (const [file, content] of Object.entries(files)) {
+    zip.file(file, content || "");
+  }
 
-  const buffer = await zip.generateAsync({
-    type: "base64"
-  });
-
-  return buffer;
+  const uint8 = await zip.generateAsync({ type: "uint8array" });
+  return uint8;
 }
