@@ -1,58 +1,25 @@
-// src/lib/ai-engine.ts
-
-import OpenAI from "openai";
+import { openai } from "./openai";
 import { AIResult } from "./types";
-import { extractJsonObject } from "./utils-json";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
-export async function runBlueprint(body: any): Promise<AIResult> {
+export async function runBlueprint(prompt: string): Promise<AIResult> {
   try {
-    if (!body || !body.prompt) {
-      return {
-        success: false,
-        message: "Missing prompt",
-      };
-    }
-
-    const completion = await client.responses.create({
-      model: "gpt-4o-mini",
-      input: `
-       You are a SaaS builder engine.
-       Return ONLY valid JSON:
-       {
-         "message": "...",
-         "files": {
-           "path/to/file": "content"
-         }
-       }
-
-       USER INPUT:
-       ${body.prompt}
-      `,
+    const completion = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt,
     });
 
-    const text = completion.output_text;
-
-    const parsed = extractJsonObject(text);
-
-    if (!parsed || !parsed.files) {
-      return {
-        success: false,
-        message: "Could not parse AI response",
-      };
-    }
+    const raw = completion.output[0].content[0].text;
+    const parsed = JSON.parse(raw);
 
     return {
       success: true,
-      message: parsed.message || "OK",
-      files: parsed.files,
+      files: parsed.files || {},
+      message: "OK",
     };
-
-  } catch (err: any) {
+  } catch (err) {
     return {
       success: false,
-      message: err?.message || "Unexpected error",
+      message: `AI engine error: ${err}`,
     };
   }
 }
