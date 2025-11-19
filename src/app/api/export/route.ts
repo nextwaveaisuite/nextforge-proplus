@@ -14,34 +14,39 @@ export async function POST(request: Request) {
 
     const zip = new JSZip();
 
-    // Add files safely
+    // Safe file loop
     for (const [path, content] of Object.entries(body.files)) {
       const safe =
         typeof content === "string"
           ? content
           : JSON.stringify(content ?? "");
-
       zip.file(path, safe);
     }
 
-    // Generate raw uint8 array  
+    // Generate a Uint8Array ZIP
     const uint8 = await zip.generateAsync({ type: "uint8array" });
 
-    // Convert to Blob (AVOIDS ALL BodyInit ISSUES)
-    const zipBlob = new Blob([uint8], { type: "application/zip" });
+    // Convert Uint8Array → guaranteed ArrayBuffer (NOT SharedArrayBuffer)
+    const realBuffer = uint8.buffer.slice(
+      uint8.byteOffset,
+      uint8.byteOffset + uint8.byteLength
+    );
 
-    // Convert Blob → ReadableStream (Next.js safe)
+    // Create blob using ONLY ArrayBuffer (safe BlobPart)
+    const zipBlob = new Blob([realBuffer], {
+      type: "application/zip",
+    });
+
+    // Convert blob → stream
     const stream = zipBlob.stream();
 
-    // Send stream response (cleanest & fully typed)
     return new NextResponse(stream as any, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="nextforge_app.zip"`
-      }
+        "Content-Disposition": 'attachment; filename="nextforge_app.zip"',
+      },
     });
-
   } catch (err: any) {
     console.error("EXPORT ERROR:", err);
     return NextResponse.json(
