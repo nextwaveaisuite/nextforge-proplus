@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { verifyToken } from "@/lib/jwt";
+import { verifyJWT } from "./lib/jwt";
 
-export function middleware(req: NextRequest) {
-  const protectedPaths = ["/dashboard"];
+export function middleware(req: Request) {
+  const url = new URL(req.url);
+  const token = req.headers.get("cookie")?.split("token=")?.[1];
 
-  if (protectedPaths.some((p) => req.nextUrl.pathname.startsWith(p))) {
-    const token = req.cookies.get("session")?.value;
+  const protectedRoutes = ["/dashboard", "/generator", "/builder"];
 
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+  if (protectedRoutes.includes(url.pathname)) {
+    if (!token) return NextResponse.redirect(new URL("/login", req.url));
 
-    const valid = verifyToken(token);
+    const decoded = verifyJWT(token);
+    if (!decoded) return NextResponse.redirect(new URL("/login", req.url));
 
-    if (!valid) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+    // Force tier presence
+    if (!decoded.tier) decoded.tier = "free";
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/dashboard"],
+  matcher: ["/dashboard/:path*", "/generator/:path*", "/builder/:path*"],
 };
