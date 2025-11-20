@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveToken } from "@/src/lib/client-auth";
+import { saveToken } from "@/lib/client-auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,7 +29,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Save token + redirect
     saveToken(data.token);
     router.push("/dashboard");
   }
