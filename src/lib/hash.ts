@@ -1,3 +1,5 @@
+// src/lib/hash.ts
+
 import bcrypt from "bcryptjs";
 
 export async function hashPassword(password: string) {
@@ -5,6 +7,6 @@ export async function hashPassword(password: string) {
   return bcrypt.hash(password, salt);
 }
 
-export async function verifyPassword(password: string, hashed: string) {
-  return bcrypt.compare(password, hashed);
+export async function verifyPassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
 }
