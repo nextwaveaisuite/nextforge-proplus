@@ -1,32 +1,37 @@
 "use client";
 
-import { getUser, clearToken } from "@/lib/client-auth";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 
-export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    const u = getUser();
-    if (!u) router.push("/login");
-    else setUser(u);
-  }, []);
+export default function DashboardPage() {
+  const { user } = useAuth();
 
   return (
-    <div style={{ padding: 40 }}>
-      <h1>NextForge Pro+ Dashboard</h1>
-      <p>User: {user?.email}</p>
-
-      <button
-        onClick={() => {
-          clearToken();
-          router.push("/login");
+    <div style={{ padding: "20px" }}>
+      {/* PLAN BADGE */}
+      <div
+        style={{
+          display: "inline-block",
+          padding: "6px 14px",
+          borderRadius: "8px",
+          background:
+            user?.plan === "elite"
+              ? "#c29fff"
+              : user?.plan === "pro"
+              ? "#7fc8ff"
+              : "#ddd",
+          color: user?.plan === "free" ? "#333" : "#000",
+          fontWeight: "bold",
+          marginBottom: "20px",
         }}
       >
-        Logout
-      </button>
+        {user?.plan?.toUpperCase()}
+      </div>
+
+      {/* REST OF YOUR DASHBOARD HERE */}
+      <h1>NextForge Pro+ Dashboard</h1>
+      <p>Welcome, {user?.email}</p>
+
+      {/* Add rest of dashboard content below */}
     </div>
   );
 }
