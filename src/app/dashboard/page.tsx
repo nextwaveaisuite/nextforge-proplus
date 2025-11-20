@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getToken, clearToken } from "@/src/lib/client-auth";
+import { getToken, clearToken } from "@/lib/client-auth";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
@@ -42,7 +42,7 @@ export default function DashboardPage() {
     <div style={{ maxWidth: 600, margin: "80px auto", fontFamily: "Arial" }}>
       <h1>Welcome, {user.email}</h1>
 
-      <p>Your dashboard is ready. Phase 2 awaits.</p>
+      <p>Your dashboard is ready.</p>
 
       <button
         style={{
