@@ -1,18 +1,17 @@
-import { supabase } from "@/lib/supabase";
-import { hashPassword } from "@/lib/hash";
-import { signToken } from "@/lib/jwt";
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
+import { supabase } from "@/src/lib/supabase";
+import { hashPassword } from "@/src/lib/hash";
+import { signJWT } from "@/src/lib/jwt";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
+    if (!email || !password)
+      return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password required" },
-        { status: 400 }
-      );
-    }
+    const hashed = await hashPassword(password);
 
     const { data: existing } = await supabase
       .from("users")
@@ -21,37 +20,22 @@ export async function POST(req: Request) {
       .single();
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Email already registered" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "User exists" }, { status: 400 });
     }
-
-    const hashed = await hashPassword(password);
 
     const { data, error } = await supabase
       .from("users")
-      .insert([{ email, password: hashed }])
+      .insert({ email, password: hashed })
       .select()
       .single();
 
     if (error) throw error;
 
-    const token = signToken(data.id);
+    const token = await signJWT({ id: data.id, email });
 
-    const res = NextResponse.json({ success: true });
-    res.cookies.set("session", token, {
-      httpOnly: true,
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return res;
-  } catch {
-    return NextResponse.json(
-      { error: "Signup failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, token });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ success: false, error: "Signup failed" }, { status: 500 });
   }
 }
