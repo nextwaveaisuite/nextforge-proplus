@@ -1,21 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveToken } from "@/lib/client-auth";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const router = useRouter();
 
-  async function handleLogin(e: any) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
+  async function handleLogin() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
@@ -23,58 +17,32 @@ export default function LoginPage() {
 
     const data = await res.json();
 
-    if (!data.success) {
-      setError(data.error || "Login failed.");
-      setLoading(false);
-      return;
+    if (data.success) {
+      saveToken(data.token || ""); // optional backup
+      router.push("/dashboard");
+    } else {
+      alert(data.error);
     }
-
-    saveToken(data.token);
-    router.push("/dashboard");
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "80px auto", fontFamily: "Arial" }}>
-      <h2>Login</h2>
+    <div style={{ padding: 40 }}>
+      <h1>Login</h1>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
-        <input
-          type="password"
-          placeholder="Password"
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+      <input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 10,
-            background: "black",
-            color: "white",
-            border: 0,
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Signing in..." : "Login"}
-        </button>
-      </form>
-
-      <p style={{ marginTop: 20 }}>
-        No account? <a href="/signup">Create one</a>
-      </p>
+      <button onClick={handleLogin}>Login</button>
     </div>
   );
 }
