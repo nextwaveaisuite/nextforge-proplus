@@ -1,11 +1,15 @@
-import { supabase } from "@/lib/supabase";
-import { verifyPassword } from "@/lib/hash";
-import { signToken } from "@/lib/jwt";
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
+import { supabase } from "@/src/lib/supabase";
+import { verifyPassword } from "@/src/lib/hash";
+import { signJWT } from "@/src/lib/jwt";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
+    if (!email || !password)
+      return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
 
     const { data: user } = await supabase
       .from("users")
@@ -14,36 +18,19 @@ export async function POST(req: Request) {
       .single();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Invalid login" }, { status: 400 });
     }
 
-    const valid = await verifyPassword(password, user.password);
-
-    if (!valid) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 400 }
-      );
+    const match = await verifyPassword(password, user.password);
+    if (!match) {
+      return NextResponse.json({ success: false, error: "Invalid login" }, { status: 400 });
     }
 
-    const token = signToken(user.id);
+    const token = await signJWT({ id: user.id, email });
 
-    const res = NextResponse.json({ success: true });
-    res.cookies.set("session", token, {
-      httpOnly: true,
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return res;
-  } catch {
-    return NextResponse.json(
-      { error: "Login failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, token });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 });
   }
 }
