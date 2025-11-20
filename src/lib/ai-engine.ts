@@ -7,28 +7,22 @@ export async function generateBlueprint(userPrompt: string) {
       messages: [
         {
           role: "system",
-          content: "You generate JSON blueprints for software scaffolding."
+          content: "You generate strict JSON blueprints for software scaffolding."
         },
         {
           role: "user",
           content: userPrompt
         }
-      ]
+      ],
+      temperature: 0.2
     });
 
-    const raw = completion.choices[0].message?.content ?? "{}";
+    const raw = completion.choices[0]?.message?.content || "{}";
     const parsed = JSON.parse(raw);
 
-    return {
-      success: true,
-      blueprint: parsed
-    };
-
+    return { success: true, blueprint: parsed };
   } catch (err) {
     console.error("AI ENGINE ERROR:", err);
-    return {
-      success: false,
-      error: "Failed to generate blueprint."
-    };
+    return { success: false, error: "Blueprint generation failed." };
   }
 }
