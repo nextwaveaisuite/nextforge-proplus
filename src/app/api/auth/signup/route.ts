@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { hashPassword } from "@/lib/auth-helpers";
@@ -8,16 +10,14 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: "Email and password are required." },
+        { success: false, error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    const hashed = await hashPassword(password);
-
     const { data, error } = await supabase
       .from("users")
-      .insert([{ email, password_hash: hashed, plan: "free" }])
+      .insert([{ email, password: await hashPassword(password), plan: "free" }])
       .select()
       .single();
 
@@ -28,14 +28,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        user: { id: data.id, email: data.email, plan: data.plan },
-      },
-      { status: 200 }
-    );
-  } catch (err) {
+    return NextResponse.json({ success: true, user: data });
+  } catch (err: any) {
     return NextResponse.json(
       { success: false, error: "Server error" },
       { status: 500 }
