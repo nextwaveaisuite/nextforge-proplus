@@ -1,16 +1,21 @@
 // src/lib/jwt.ts
-import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET!;
 
-export function signJWT(payload: any) {
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+// Encode JWT
+export async function signJWT(payload: object) {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(new TextEncoder().encode(SECRET));
 }
 
-export function verifyJWT(token: string) {
+// Decode JWT
+export async function verifyJWT(token: string) {
   try {
-    return jwt.verify(token, SECRET) as any;
-  } catch {
+    return await jwtVerify(token, new TextEncoder().encode(SECRET));
+  } catch (e) {
     return null;
   }
 }
