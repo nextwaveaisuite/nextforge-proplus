@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
-import { verifyJWT } from "@/lib/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "@/lib/auth-helpers";
 
-export async function GET(req: Request) {
-  const token = req.headers.get("cookie")?.split("token=")?.[1];
+export async function GET(request: NextRequest) {
+  try {
+    const token = request.cookies.get("token")?.value;
 
-  if (!token)
-    return NextResponse.json({ user: null });
+    if (!token) {
+      return NextResponse.json({ success: false, user: null });
+    }
 
-  const decoded = verifyJWT(token);
-  return NextResponse.json({ user: decoded || null });
+    const user = await verifyToken(token);
+
+    return NextResponse.json({ success: true, user });
+  } catch (err) {
+    return NextResponse.json({ success: false, user: null });
+  }
 }
