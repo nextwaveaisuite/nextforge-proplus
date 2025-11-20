@@ -1,21 +1,27 @@
+"use client";
+
+import { useAuth } from "@/app/context/AuthContext";
+
 export default function UpgradePage() {
+  const { user } = useAuth();
+
   return (
-    <div className="p-10 max-w-xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Upgrade Your Plan</h1>
+    <div style={{ padding: "40px", textAlign: "center" }}>
+      <h1>Upgrade Required</h1>
+      <p>Your current plan: <strong>{user?.plan}</strong></p>
 
-      <div className="space-y-6">
+      <div style={{ marginTop: "30px" }}>
         <a
-          href="YOUR_STRIPE_LINK_HERE"
-          className="block p-6 bg-blue-600 text-white rounded-lg text-center"
+          href="/pricing"
+          style={{
+            padding: "12px 20px",
+            background: "#0070f3",
+            color: "white",
+            textDecoration: "none",
+            borderRadius: "6px",
+          }}
         >
-          Upgrade with Stripe (Pro+)
-        </a>
-
-        <a
-          href="https://www.paypal.com/paypalme/nextwaveaisuite"
-          className="block p-6 bg-yellow-500 text-black rounded-lg text-center"
-        >
-          Upgrade with PayPal
+          View Upgrade Options
         </a>
       </div>
     </div>
