@@ -1,13 +1,13 @@
 // src/lib/client-auth.ts
 
-// Save JWT to localStorage
+// Save JWT to browser
 export function saveToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem("nf_token", token);
   }
 }
 
-// Read JWT
+// Load JWT
 export function getToken() {
   if (typeof window !== "undefined") {
     return localStorage.getItem("nf_token");
@@ -15,9 +15,23 @@ export function getToken() {
   return null;
 }
 
-// Clear on logout
+// Clear JWT
 export function clearToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("nf_token");
+  }
+}
+
+// Decode JWT (client-side safe)
+export function getUser() {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const base = token.split(".")[1];
+    const decoded = JSON.parse(atob(base));
+    return decoded;
+  } catch {
+    return null;
   }
 }
