@@ -1,35 +1,32 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 import { hashPassword } from "@/lib/hash";
-import { createClient } from "@/lib/supabase";
-import { signToken } from "@/lib/jwt";
+import { signJWT } from "@/lib/jwt";
 
 export async function POST(req: Request) {
-  try {
-    const { email, password } = await req.json();
-    const supabase = createClient();
+  const { email, password } = await req.json();
 
-    const password_hash = await hashPassword(password);
+  if (!email || !password)
+    return NextResponse.json({ success: false, error: "Missing fields" });
 
-    const { data, error } = await supabase
-      .from("users")
-      .insert([{ email, password_hash }])
-      .select()
-      .single();
+  const hashed = await hashPassword(password);
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: "User already exists or DB error." },
-        { status: 400 }
-      );
-    }
+  const { data, error } = await supabase
+    .from("users")
+    .insert([{ email, password: hashed, tier: "free" }])
+    .select()
+    .single();
 
-    const token = signToken({ id: data.id, email: data.email });
+  if (error) return NextResponse.json({ success: false, error: error.message });
 
-    return NextResponse.json({ success: true, token });
-  } catch (err) {
-    return NextResponse.json(
-      { success: false, error: "Signup failed" },
-      { status: 500 }
-    );
-  }
+  const token = signJWT({
+    id: data.id,
+    email: data.email,
+    tier: "free",
+  });
+
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("token", token, { httpOnly: true, path: "/" });
+
+  return res;
 }
