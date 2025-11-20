@@ -1,21 +1,24 @@
 // src/lib/jwt.ts
 
-const SECRET = process.env.JWT_SECRET!;
+import { SignJWT, jwtVerify } from "jose";
 
-// Encode JWT
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev_secret");
+
+// Generate JWT
 export async function signJWT(payload: object) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(new TextEncoder().encode(SECRET));
+    .sign(secret);
 }
 
-// Decode JWT
+// Verify JWT
 export async function verifyJWT(token: string) {
   try {
-    return await jwtVerify(token, new TextEncoder().encode(SECRET));
-  } catch (e) {
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch (err) {
     return null;
   }
 }
