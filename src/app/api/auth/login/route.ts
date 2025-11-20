@@ -1,44 +1,31 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 import { verifyPassword } from "@/lib/hash";
-import { createClient } from "@/lib/supabase";
-import { signToken } from "@/lib/jwt";
+import { signJWT } from "@/lib/jwt";
 
 export async function POST(req: Request) {
-  try {
-    const { email, password } = await req.json();
-    const supabase = createClient();
+  const { email, password } = await req.json();
 
-    // Find user
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .limit(1);
+  const { data: user } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .single();
 
-    if (error || !users || users.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password." },
-        { status: 400 }
-      );
-    }
+  if (!user) return NextResponse.json({ success: false, error: "User not found" });
 
-    const user = users[0];
+  const valid = await verifyPassword(password, user.password);
+  if (!valid)
+    return NextResponse.json({ success: false, error: "Invalid login" });
 
-    const valid = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password." },
-        { status: 400 }
-      );
-    }
+  const token = signJWT({
+    id: user.id,
+    email: user.email,
+    tier: user.tier,
+  });
 
-    const token = signToken({ id: user.id, email: user.email });
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("token", token, { httpOnly: true, path: "/" });
 
-    return NextResponse.json({ success: true, token });
-  } catch (err) {
-    return NextResponse.json(
-      { success: false, error: "Login failed" },
-      { status: 500 }
-    );
-  }
+  return res;
 }
