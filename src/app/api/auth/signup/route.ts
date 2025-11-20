@@ -1,5 +1,3 @@
-// src/app/api/auth/signup/route.ts
-
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { hashPassword } from "@/lib/hash";
@@ -8,44 +6,28 @@ import { signJWT } from "@/lib/jwt";
 export async function POST(req: Request) {
   const { email, password } = await req.json();
 
-  // Check if user exists
-  const { data: exists } = await supabase
-    .from("users")
-    .select("*")
-    .eq("email", email)
-    .maybeSingle();
-
-  if (exists) {
-    return NextResponse.json(
-      { error: "Email already registered" },
-      { status: 400 }
-    );
+  if (!email || !password) {
+    return NextResponse.json({ success: false, error: "Missing fields" });
   }
 
-  // Hash password
   const hashed = await hashPassword(password);
 
-  // Create user
-  const { data: user, error } = await supabase
+  const { data, error } = await supabase
     .from("users")
     .insert({ email, password: hashed })
     .select()
     .single();
 
-  if (error || !user) {
-    return NextResponse.json(
-      { error: "Failed to create user" },
-      { status: 500 }
-    );
+  if (error) {
+    return NextResponse.json({ success: false, error: error.message });
   }
 
-  // IMPORTANT: await JWT creation
-  const token = await signJWT({ id: user.id, email: user.email });
+  const token = await signJWT({ id: data.id, email: data.email });
 
   const res = NextResponse.json({ success: true });
-
-  // Correct cookie format
-  res.cookies.set("token", token, {
+  res.cookies.set({
+    name: "token",
+    value: token,
     httpOnly: true,
     path: "/",
   });
