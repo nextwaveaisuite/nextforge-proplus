@@ -1,36 +1,50 @@
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { hashPassword } from "@/lib/hash";
-import { signJWT } from "@/lib/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
+import { hashPassword } from "@/lib/auth-helpers";
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json();
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password } = await request.json();
 
-  if (!email || !password) {
-    return NextResponse.json({ success: false, error: "Missing fields" });
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: "Email and password are required." },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashed = await hashPassword(password);
+
+    // Create user in Supabase
+    const { data, error } = await supabase
+      .from("users")
+      .insert([{ email, password: hashed, plan: "free" }])
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        user: {
+          id: data.id,
+          email: data.email,
+          plan: data.plan,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    return NextResponse.json(
+      { success: false, error: "Server error" },
+      { status: 500 }
+    );
   }
-
-  const hashed = await hashPassword(password);
-
-  const { data, error } = await supabase
-    .from("users")
-    .insert({ email, password: hashed })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ success: false, error: error.message });
-  }
-
-  const token = await signJWT({ id: data.id, email: data.email });
-
-  const res = NextResponse.json({ success: true });
-  res.cookies.set({
-    name: "token",
-    value: token,
-    httpOnly: true,
-    path: "/",
-  });
-
-  return res;
 }
