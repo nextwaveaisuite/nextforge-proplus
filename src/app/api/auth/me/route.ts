@@ -1,15 +1,13 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
-import { verifyJWT } from "@/src/lib/jwt";
+import { verifyToken } from "@/lib/jwt";
 
 export async function GET(req: Request) {
   try {
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) return NextResponse.json({ loggedIn: false });
+    const auth = req.headers.get("authorization");
+    if (!auth) return NextResponse.json({ loggedIn: false });
 
-    const payload = await verifyJWT(token);
-    if (!payload) return NextResponse.json({ loggedIn: false });
+    const token = auth.replace("Bearer ", "");
+    const payload = verifyToken(token);
 
     return NextResponse.json({ loggedIn: true, user: payload });
   } catch {
