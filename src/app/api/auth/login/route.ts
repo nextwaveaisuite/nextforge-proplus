@@ -1,17 +1,12 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-import { generateToken, verifyPassword } from "@/lib/auth-helpers";
+import { verifyPassword, signJWT } from "@/lib/auth-helpers";
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: "Email and password required." },
-        { status: 400 }
-      );
-    }
 
     const { data: user, error } = await supabase
       .from("users")
@@ -21,45 +16,39 @@ export async function POST(request: NextRequest) {
 
     if (error || !user) {
       return NextResponse.json(
-        { success: false, error: "Invalid credentials." },
+        { success: false, error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    const valid = await verifyPassword(password, user.password_hash);
+    const isValid = await verifyPassword(password, user.password);
 
-    if (!valid) {
+    if (!isValid) {
       return NextResponse.json(
-        { success: false, error: "Invalid credentials." },
+        { success: false, error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    const token = await generateToken({
+    const token = await signJWT({
       id: user.id,
       email: user.email,
       plan: user.plan,
     });
 
-    const response = NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        plan: user.plan,
-      },
-    });
+    const response = NextResponse.json({ success: true });
 
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: true,
+      sameSite: "strict",
       path: "/",
     });
 
     return response;
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: "Server error." },
+      { success: false, error: "Server error" },
       { status: 500 }
     );
   }
