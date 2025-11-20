@@ -13,13 +13,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
     const hashed = await hashPassword(password);
 
-    // Create user in Supabase
     const { data, error } = await supabase
       .from("users")
-      .insert([{ email, password: hashed, plan: "free" }])
+      .insert([{ email, password_hash: hashed, plan: "free" }])
       .select()
       .single();
 
@@ -33,11 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        user: {
-          id: data.id,
-          email: data.email,
-          plan: data.plan,
-        },
+        user: { id: data.id, email: data.email, plan: data.plan },
       },
       { status: 200 }
     );
