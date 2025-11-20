@@ -1,1 +1,10 @@
-module.exports={reactStrictMode:false,};
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  env: {
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_KEY: process.env.SUPABASE_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY
+  }
+};
+
+module.exports = nextConfig;
