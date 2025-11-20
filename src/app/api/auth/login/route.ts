@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const valid = await verifyPassword(password, user.password);
+    const valid = await verifyPassword(password, user.password_hash);
 
     if (!valid) {
       return NextResponse.json(
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("token", token, {
       httpOnly: true,
-      path: "/",
       secure: true,
+      path: "/",
     });
 
     return response;
