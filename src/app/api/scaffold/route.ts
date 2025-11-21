@@ -1,37 +1,39 @@
-// src/app/api/scaffold/route.ts
-export const runtime = "nodejs";
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateBlueprint } from "@/lib/ai-engine";
+import { createScaffoldFromBlueprint } from "@/lib/generator";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { prompt, formats } = await req.json();
 
-    if (!prompt) {
+    if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
-        { error: "Prompt is required." },
+        { success: false, error: "Prompt is required." },
         { status: 400 }
       );
     }
 
-    // Default formats if not provided
-    const selectedFormats = formats || {
-      nextjs: true,
-      microapp: true,
-      backend: false,
-      flutter: false,
-    };
+    // Use your unified dual-format AI engine
+    const blueprint = await generateBlueprint(prompt, formats || {});
 
-    const blueprint = await generateBlueprint(prompt, selectedFormats);
+    // Scaffold = file structure, folder tree, base index pages, utilities, etc.
+    const scaffold = await createScaffoldFromBlueprint(blueprint);
 
-    return NextResponse.json({
-      success: true,
-      blueprint,
-    });
-  } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Blueprint generation failed" },
+      {
+        success: true,
+        scaffold,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("SCAFFOLD ROUTE ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message || "Failed to generate scaffold.",
+      },
       { status: 500 }
     );
   }
