@@ -1,18 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth-helpers";
+// src/app/api/auth/me/route.ts
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest) {
+import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
+import { decodeJwt } from "jose";
+
+export async function GET(req: Request) {
   try {
-    const token = request.cookies.get("token")?.value;
+    const auth = req.headers.get("authorization");
 
-    if (!token) {
-      return NextResponse.json({ success: false, user: null });
+    if (!auth) {
+      return NextResponse.json(
+        { user: null },
+        { status: 200 }
+      );
     }
 
-    const user = await verifyToken(token);
+    const token = auth.replace("Bearer ", "");
+    const decoded: any = decodeJwt(token);
 
-    return NextResponse.json({ success: true, user });
-  } catch (err) {
-    return NextResponse.json({ success: false, user: null });
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", decoded.id)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json(
+        { user: null },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json({ user: data });
+  } catch (err: any) {
+    return NextResponse.json({ user: null }, { status: 200 });
   }
 }
