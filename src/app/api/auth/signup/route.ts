@@ -1,14 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
-import { hashPassword } from "@/lib/auth-helpers";
+// src/app/api/auth/signup/route.ts
+export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+import { NextResponse } from "next/server";
+import { hashPassword } from "@/lib/auth-helpers";
+import { supabase } from "@/lib/supabaseClient";
+import { createLoginSession } from "@/lib/client-auth";
+
+export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: "Email and password required." },
+        { error: "Email and password required" },
         { status: 400 }
       );
     }
@@ -17,20 +22,30 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from("users")
-      .insert([{ email, password_hash: hashed }])
-      .select();
+      .insert({
+        email,
+        password: hashed,
+        plan: "free",
+      })
+      .select()
+      .single();
 
     if (error) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { error: "Signup failed: " + error.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, user: data[0] });
-  } catch (error) {
+    const session = await createLoginSession(data);
+
+    return NextResponse.json({
+      success: true,
+      token: session.token,
+    });
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: "Internal error." },
+      { error: err.message || "Signup failed" },
       { status: 500 }
     );
   }
