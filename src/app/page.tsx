@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import GeneratorSection from "./components/GeneratorSection";
-import BuildOutput from "./components/BuildOutput";
-import { FormatToggle } from "./components/FormatToggle";
+
+// Correct component import paths
+import GeneratorSection from "@/app/components/GeneratorSection";
+import BuildOutput from "@/components/BuildOutput";
+import { FormatToggle } from "@/components/FormatToggle";
+
+// Correct AI engine import
 import { generateBlueprint } from "@/lib/ai-engine";
 
 export default function HomePage() {
@@ -57,10 +61,8 @@ export default function HomePage() {
         loading={loading}
       />
 
-      {/* Format Toggles */}
       <FormatToggle formats={formats} setFormats={setFormats} />
 
-      {/* Output */}
       <BuildOutput blueprint={blueprint} loading={loading} />
     </main>
   );
