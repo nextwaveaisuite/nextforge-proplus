@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
-import { generateAllFormats } from "@/src/lib/ai-engine";
+import { generateBlueprint } from "@/lib/ai-engine";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const { prompt } = await req.json();
 
-    const description = body.description;
-    const includeBackend = body.includeBackend ?? false;
-    const includeFlutter = body.includeFlutter ?? false;
+    if (!prompt || prompt.trim().length === 0) {
+      return NextResponse.json(
+        { error: "Prompt is required" },
+        { status: 400 }
+      );
+    }
 
-    const result = await generateAllFormats({
-      description,
-      includeBackend,
-      includeFlutter,
-    });
+    const blueprint = await generateBlueprint(prompt);
 
-    return NextResponse.json(result);
-  } catch (err: any) {
+    return NextResponse.json({ blueprint });
+  } catch (err) {
+    console.error("Build error:", err);
     return NextResponse.json(
-      { error: err.message || "Build failed" },
+      { error: "Internal build failure" },
       { status: 500 }
     );
   }
