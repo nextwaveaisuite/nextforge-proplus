@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { verifyPassword } from "@/lib/auth-helpers";
@@ -22,30 +24,27 @@ export async function POST(req: NextRequest) {
 
     if (error || !user) {
       return NextResponse.json(
-        { success: false, error: "Invalid credentials." },
+        { success: false, error: "Invalid login credentials." },
         { status: 401 }
       );
     }
 
-    const isValid = await verifyPassword(password, user.password_hash);
+    const valid = await verifyPassword(password, user.password_hash);
 
-    if (!isValid) {
+    if (!valid) {
       return NextResponse.json(
-        { success: false, error: "Invalid credentials." },
+        { success: false, error: "Invalid login credentials." },
         { status: 401 }
       );
     }
 
-    const session = await createLoginSession(user);
+    const session = createLoginSession(user);
 
+    return NextResponse.json({ success: true, user, session });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
     return NextResponse.json(
-      { success: true, user, session },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error." },
+      { success: false, error: "Server error." },
       { status: 500 }
     );
   }
