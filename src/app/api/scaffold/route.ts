@@ -1,27 +1,37 @@
+// src/app/api/scaffold/route.ts
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { generateBlueprint } from "@/lib/ai-engine";
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, formats } = await req.json();
 
     if (!prompt) {
       return NextResponse.json(
-        { error: "Missing prompt." },
+        { error: "Prompt is required." },
         { status: 400 }
       );
     }
 
-    const blueprint = await generateBlueprint(prompt);
+    // Default formats if not provided
+    const selectedFormats = formats || {
+      nextjs: true,
+      microapp: true,
+      backend: false,
+      flutter: false,
+    };
 
-    return NextResponse.json(
-      { success: true, blueprint },
-      { status: 200 }
-    );
+    const blueprint = await generateBlueprint(prompt, selectedFormats);
+
+    return NextResponse.json({
+      success: true,
+      blueprint,
+    });
   } catch (err: any) {
-    console.error("SCAFFOLD ERROR:", err);
     return NextResponse.json(
-      { error: err.message ?? "Failed generating scaffold." },
+      { error: err.message || "Blueprint generation failed" },
       { status: 500 }
     );
   }
