@@ -1,32 +1,19 @@
-"use client";
+// src/lib/client-auth.ts
 
-export function saveToken(token: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("token", token);
-  }
-}
+import jwt from "jsonwebtoken";
 
-export function getToken() {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
-}
+export function createLoginSession(user: any) {
+  const token = jwt.sign(
+    {
+      id: user.id,
+      email: user.email
+    },
+    process.env.JWT_SECRET!,
+    { expiresIn: "7d" }
+  );
 
-export function clearToken() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-  }
-}
-
-export function getUser() {
-  const token = getToken();
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload;
-  } catch {
-    return null;
-  }
+  return {
+    token,
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000
+  };
 }
