@@ -1,32 +1,38 @@
-// src/app/api/blueprint/route.ts
-export const runtime = "nodejs";
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateBlueprint } from "@/lib/ai-engine";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { prompt } = await req.json();
+    const body = await req.json();
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required." },
-        { status: 400 }
-      );
-    }
-
-    // REQUIRED: new signature now needs 2 arguments
-    const blueprint = await generateBlueprint(prompt, {
+    const prompt = body?.prompt;
+    const formats = body?.formats || {
       nextjs: true,
       microapp: true,
       backend: false,
       flutter: false,
-    });
+    };
 
-    return NextResponse.json(blueprint);
+    if (!prompt || typeof prompt !== "string") {
+      return NextResponse.json(
+        { success: false, error: "Prompt is required." },
+        { status: 400 }
+      );
+    }
+
+    // Corrected: generateBlueprint now takes 2 args
+    const blueprint = await generateBlueprint(prompt, formats);
+
+    return NextResponse.json({
+      success: true,
+      blueprint,
+      formats,
+    });
   } catch (err: any) {
+    console.error("Blueprint API Error:", err);
+
     return NextResponse.json(
-      { error: err.message || "Failed to generate blueprint" },
+      { success: false, error: "Blueprint generation failed." },
       { status: 500 }
     );
   }
