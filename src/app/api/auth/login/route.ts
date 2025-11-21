@@ -1,12 +1,18 @@
-export const runtime = "nodejs";
-
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-import { verifyPassword, signJWT } from "@/lib/auth-helpers";
+import { verifyPassword } from "@/lib/auth-helpers";
+import { createLoginSession } from "@/lib/client-auth";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: "Email and password are required." },
+        { status: 400 }
+      );
+    }
 
     const { data: user, error } = await supabase
       .from("users")
@@ -16,39 +22,30 @@ export async function POST(request: NextRequest) {
 
     if (error || !user) {
       return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
+        { success: false, error: "Invalid credentials." },
         { status: 401 }
       );
     }
 
-    const isValid = await verifyPassword(password, user.password);
+    const isValid = await verifyPassword(password, user.password_hash);
 
     if (!isValid) {
       return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
+        { success: false, error: "Invalid credentials." },
         { status: 401 }
       );
     }
 
-    const token = await signJWT({
-      id: user.id,
-      email: user.email,
-      plan: user.plan,
-    });
+    const session = await createLoginSession(user);
 
-    const response = NextResponse.json({ success: true });
-
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-    });
-
-    return response;
-  } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: "Server error" },
+      { success: true, user, session },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Login error:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal server error." },
       { status: 500 }
     );
   }
