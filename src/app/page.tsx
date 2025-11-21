@@ -1,22 +1,62 @@
 "use client";
 
-import GeneratorSection from "@/components/GeneratorSection";
+import { useState } from "react";
+import FormatToggle from "@/components/FormatToggle";
+import BuildOutput from "@/components/BuildOutput";
 
 export default function Home() {
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [formats, setFormats] = useState({
+    nextjs: true,       // always ON
+    microapp: true,     // always ON
+    node: false,        // optional
+    flutter: false,     // optional
+  });
+
+  const [result, setResult] = useState(null);
+
+  async function handleBuild() {
+    setLoading(true);
+    setResult(null);
+
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        description,
+        formats,
+      }),
+    });
+
+    const data = await res.json();
+    setResult(data);
+    setLoading(false);
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-black via-[#030018] to-black text-white flex flex-col items-center px-6 py-16">
-      <div className="max-w-3xl w-full">
-        <h1 className="text-center text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
-          NextForge Pro+ Generator
-        </h1>
+    <main className="builder-wrapper">
+      <h1 className="builder-title">NextForge Pro+ Generator</h1>
+      <p className="builder-sub">Your upgraded multi-format SaaS factory.</p>
 
-        <p className="text-center text-lg text-gray-300 mb-10">
-          Describe the app you want, and NextForge Pro+ will design and build
-          the structure instantly.
-        </p>
+      <textarea
+        className="builder-textbox"
+        placeholder="Describe the app you want..."
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
 
-        <GeneratorSection />
-      </div>
+      <FormatToggle formats={formats} setFormats={setFormats} />
+
+      <button
+        className="builder-button"
+        disabled={loading || !description}
+        onClick={handleBuild}
+      >
+        {loading ? "Building…" : "Build My App"}
+      </button>
+
+      {result && <BuildOutput result={result} />}
     </main>
   );
 }
