@@ -1,11 +1,12 @@
 // src/lib/client-auth.ts
-// Lightweight, no dependencies.
+
+import { SignJWT } from "jose";
 
 export async function createLoginSession(user: any) {
   const payload = {
     id: user.id,
     email: user.email,
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 // 7 days
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
   };
 
   const token = await new SignJWT(payload)
@@ -14,9 +15,13 @@ export async function createLoginSession(user: any) {
 
   return {
     token,
-    expires: payload.exp * 1000
+    expires: payload.exp * 1000,
   };
 }
 
-// Needed import:
-import { SignJWT } from "jose";
+// REQUIRED by login + signup pages
+export function saveToken(token: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("nf_token", token);
+  }
+}
