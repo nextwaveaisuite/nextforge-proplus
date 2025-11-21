@@ -1,19 +1,22 @@
 // src/lib/client-auth.ts
+// Lightweight, no dependencies.
 
-import jwt from "jsonwebtoken";
+export async function createLoginSession(user: any) {
+  const payload = {
+    id: user.id,
+    email: user.email,
+    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 // 7 days
+  };
 
-export function createLoginSession(user: any) {
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email
-    },
-    process.env.JWT_SECRET!,
-    { expiresIn: "7d" }
-  );
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
 
   return {
     token,
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000
+    expires: payload.exp * 1000
   };
 }
+
+// Needed import:
+import { SignJWT } from "jose";
