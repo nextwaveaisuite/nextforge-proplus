@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import generateBlueprint from "@/lib/generator";
+
+export async function POST(req) {
+  const { description, formats } = await req.json();
+  const blueprint = await generateBlueprint(description, formats);
+
+  return NextResponse.json(blueprint);
+}
